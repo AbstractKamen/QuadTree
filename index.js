@@ -2,7 +2,7 @@ const BRUSH_MAX = 10;
 const DRAW_SELECTION = [{
   label: 'Paint Points',
   draw() {
-    if (mouseIsPressed) {
+    if (mouseIsPressed && mouseX <= treeSize && mouseY <= treeSize) {
       for (let i = 0; i < brush; ++i) {
         quadTree.insert(new Point(mouseX + random(-brush, brush), mouseY + random(-brush, brush)))
       }
@@ -39,10 +39,6 @@ var drawSwitch;
 var curDraw;
 var brush;
 
-onload = () => {
-  setup();
-}
-
 function setup() {
   brush = 1;
   curDraw = DRAW_SELECTION[0];
@@ -54,11 +50,14 @@ function setup() {
   canvas.parent = 'sketch-holder';
   centerCanvas();
   quadTree = new QuadTree(new Quadrant(treeSize, treeSize, treeSize, treeSize), 4);
-  document.getElementById('clear').addEventListener('click', () => {
+
+  function doClear() {
     quadTree.clear();
     clear();
     background(0);
-  });
+  }
+  document.getElementById('clear').addEventListener('click', doClear);
+
 
   const content = document.getElementById('dropdown-content');
   const dropdownButton = document.getElementById('dropbtn');
