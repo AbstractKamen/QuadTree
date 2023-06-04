@@ -30,6 +30,30 @@ class QuadTree {
         this.capacity = capacity;
         this.points = [];
     }
+    size() {
+        if (!this.divided) {
+            return this.points.length;
+        }
+        return this.points.length +
+            this.upLeft.size() +
+            this.upRight.size() +
+            this.downLeft.size() +
+            this.downRight.size()
+    }
+    clear() {
+        this.points = [];
+        if (this.divided) {
+            this.upLeft.clear();
+            this.upRight.clear();
+            this.downLeft.clear();
+            this.downRight.clear();
+            this.divided = false;
+        }
+        this.upLeft = null;
+        this.upRight = null;
+        this.downLeft = null;
+        this.downRight = null;
+    }
     insert(point) {
         if (!this.quadrant.contains(point)) {
             return;
