@@ -1,40 +1,30 @@
 const BRUSH_MAX = 10;
 const TEXT_SIZE = 12;
+
 const DRAW_SELECTION = [{
   label: 'Paint Points',
   draw(sketch) {
-    if (sketch.mouseIsPressed && sketch.mouseX <= treeSize && sketch.mouseY <= treeSize) {
-      for (let i = 0; i < brush; ++i) {
-        quadTree.insert(new Point(sketch.mouseX + sketch.random(-brush, brush), sketch.mouseY + sketch.random(-brush, brush)))
-      }
+    if (sketch.mouseIsPressed) {
+      doPaintPoints(sketch, sketch.mouseX, sketch.mouseY);
     }
+  },
+  drawTouch(sketch, e) {
+    doPaintPoints(sketch, e.x, e.y);
+    return false;
   }
 }, {
   label: 'Select Points',
   draw(sketch) {
     if (sketch.mouseIsPressed) {
-      sketch.stroke(0, 255, 0);
-      sketch.noFill();
-      sketch.rectMode(sketch.CENTER);
-      const selectionSize = treeSize / (BRUSH_MAX + 2 - brush);
-      const selection = new Quadrant(sketch.mouseX, sketch.mouseY, selectionSize, selectionSize);
-      const cq = new CountingQuery();
-      const result = cq.query(quadTree, selection);
-      sketch.rect(selection.x, selection.y, selection.h * 2, selection.w * 2);
-      sketch.stroke(255, 0, 0);
-      for (let p of result.resList) {
-        sketch.strokeWeight(3);
-        sketch.point(p.x, p.y);
-      }
-      sketch.strokeWeight(1);
-      sketch.textSize(TEXT_SIZE);
-      sketch.fill(255, 0, 0);
-      let c = result.resList.length;
-      let s = result.steps;
-      sketch.text(`Found ${c} points in ${s} steps`, sketch.mouseX - selectionSize, sketch.mouseY - selectionSize);
+      doSelectPoints(sketch, sketch.mouseX, sketch.mouseY);
     }
+  },
+  drawTouch(sketch, e) {
+    doSelectPoints(sketch, e.x, e.y);
+    return false;
   }
 }];
+
 var canvas;
 var sketch;
 var quadTree;
@@ -48,6 +38,8 @@ var p5;
 
 onload = () => {
   initP5();
+  brush = 1;
+  curDraw = DRAW_SELECTION[0];
   document.getElementById('clear').addEventListener('click', () => {
     quadTree.clear();
   });
@@ -76,45 +68,70 @@ onload = () => {
 }
 
 function initP5() {
-  const s = (sketch) => {
-    sketch.setup = () => {
-      brush = 1;
-      curDraw = DRAW_SELECTION[0];
-      let s = 0.8;
-      let h = ((window.innerHeight > 0) ? window.innerHeight : screen.height) * s;
-      let w = ((window.innerWidth > 0) ? window.innerWidth : screen.width) * s;
-      treeSize = Math.min(w, h);
-      canvas = sketch.createCanvas(treeSize, treeSize);
-      centerCanvas(sketch);
-      quadTree = new QuadTree(new Quadrant(treeSize, treeSize, treeSize, treeSize), 4);
-    };
-    sketch.draw = () => {
-      let visitor = new Visitor(sketch)
-      sketch.background(0);
-      quadTree.accept(visitor);
-      sketch.strokeWeight(1);
-      sketch.fill(0, 0, 255);
-      sketch.stroke(0, 0, 255);
-      sketch.textSize(TEXT_SIZE);
-      sketch.text(`Total sub-trees: ${visitor.subTrees}`, treeSize * 0.005, treeSize * 0.03);
-      sketch.text(`Total points: ${quadTree.size()}`, treeSize * 0.005, treeSize * 0.07);
-      curDraw.draw(sketch);
-    };
-  };
-  p5 = new p5(s, 'sketch-holder');
+  let s = 0.8;
+  let h = ((window.innerHeight > 0) ? window.innerHeight : screen.height) * s;
+  let w = ((window.innerWidth > 0) ? window.innerWidth : screen.width) * s;
+  treeSize = Math.min(w, h);
+  const rootQuadrant = new Quadrant(treeSize, treeSize, treeSize, treeSize);
+
+  p5 = new p5(
+    (sketch) => {
+      sketch.setup = () => {
+        canvas = sketch.createCanvas(treeSize, treeSize);
+        quadTree = new QuadTree(rootQuadrant, 4);
+      };
+      sketch.draw = () => {
+        let visitor = new Visitor(sketch)
+        sketch.background(0);
+        quadTree.accept(visitor);
+        sketch.strokeWeight(1);
+        sketch.fill(0, 0, 255);
+        sketch.stroke(0, 0, 255);
+        sketch.textSize(TEXT_SIZE);
+        sketch.text(`Total sub-trees: ${visitor.subTrees}`, treeSize * 0.005, treeSize * 0.03);
+        sketch.text(`Total points: ${quadTree.size()}`, treeSize * 0.005, treeSize * 0.07);
+        curDraw.draw(sketch);
+        for (e of sketch.touches) {
+          if (rootQuadrant.contains(new Point(e.x, e.y))) {
+            console.log(e);
+            curDraw.drawTouch(sketch, e.x, e.y);
+          }
+        }
+      };
+    },
+    'sketch-holder');
 }
 
-function centerCanvas(sketch) {
-  // let holder = document.getElementById('sketch-holder')
-  // console.log(holder);
-  // offsetX = (sketch.windowWidth - treeSize) / 2;
-  // offsetY = (sketch.windowHeight - treeSize);
-  // canvas.position(offsetX, offsetY);
+function doPaintPoints(sketch, x, y) {
+  if (x <= treeSize && y <= treeSize) {
+    for (let i = 0; i < brush; ++i) {
+      quadTree.insert(new Point(x + sketch.random(-brush, brush), y + sketch.random(-brush, brush)))
+    }
+  }
 }
 
-function windowResized() {
-  centerCanvas(p5.sketch);
+function doSelectPoints(sketch, x, y) {
+  sketch.stroke(0, 255, 0);
+  sketch.noFill();
+  sketch.rectMode(sketch.CENTER);
+  const selectionSize = treeSize / (BRUSH_MAX + 2 - brush);
+  const selection = new Quadrant(x, y, selectionSize, selectionSize);
+  const cq = new CountingQuery();
+  const result = cq.query(quadTree, selection);
+  sketch.rect(selection.x, selection.y, selection.h * 2, selection.w * 2);
+  sketch.stroke(255, 0, 0);
+  for (let p of result.resList) {
+    sketch.strokeWeight(3);
+    sketch.point(p.x, p.y);
+  }
+  sketch.strokeWeight(1);
+  sketch.textSize(TEXT_SIZE);
+  sketch.fill(255, 0, 0);
+  let c = result.resList.length;
+  let s = result.steps;
+  sketch.text(`Found ${c} points in ${s} steps`, x - selectionSize, y - selectionSize);
 }
+
 class Visitor {
   constructor(sketch) {
     this.sketch = sketch;
