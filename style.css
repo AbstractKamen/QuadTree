@@ -3,7 +3,9 @@ body {
     color: white;
     margin-top: 1%;
 }
-
+input{
+    width: 20%;
+}
 #title {
     padding-left: 1%;
 }

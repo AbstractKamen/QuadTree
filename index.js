@@ -23,6 +23,7 @@ var quadTree;
 var offsetX;
 var offsetY;
 var treeSize;
+var treeCapacity;
 var drawSwitch;
 var curDraw;
 var brush;
@@ -57,6 +58,16 @@ onload = () => {
   b.oninput = () => {
     brush = parseInt(b.value);
   }
+  const t = document.getElementById('tree-capacity');
+  const tv = document.getElementById('tree-capacity-value');
+  t.value = treeCapacity;
+  tv.innerText = 'Capacity: ' + treeCapacity;
+  t.oninput = () => {
+    treeCapacity = parseInt(t.value);
+    tv.innerText = 'Capacity: ' + treeCapacity;
+    quadTree.clear()
+    quadTree = new QuadTree(new Quadrant(treeSize, treeSize, treeSize, treeSize), treeCapacity);
+  }
 }
 
 function initP5() {
@@ -69,12 +80,13 @@ function initP5() {
         return e.target.id !== canvas.canvas.id;
       };
       sketch.setup = () => {
+        treeCapacity = 4;
         let s = 0.8;
         let h = ((window.innerHeight > 0) ? window.innerHeight : screen.height) * s;
         let w = ((window.innerWidth > 0) ? window.innerWidth : screen.width) * s;
         treeSize = Math.min(w, h);
         canvas = sketch.createCanvas(treeSize, treeSize);
-        quadTree = new QuadTree(new Quadrant(treeSize, treeSize, treeSize, treeSize), 4);
+        quadTree = new QuadTree(new Quadrant(treeSize, treeSize, treeSize, treeSize), treeCapacity);
       };
       sketch.draw = () => {
         let visitor = new Visitor(sketch)
@@ -95,7 +107,7 @@ function initP5() {
 function doPaintPoints(sketch, x, y) {
   if (x <= treeSize && y <= treeSize) {
     for (let i = 0; i < brush; ++i) {
-      quadTree.insert(new Point(x + sketch.random(-brush, brush), y + sketch.random(-brush, brush)))
+      quadTree.insert(new Point(Math.fround(x + sketch.random(-brush, brush)), Math.fround(y + sketch.random(-brush, brush))))
     }
   }
 }
