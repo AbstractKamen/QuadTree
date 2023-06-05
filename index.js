@@ -1,36 +1,37 @@
 const BRUSH_MAX = 10;
 const DRAW_SELECTION = [{
   label: 'Paint Points',
-  draw() {
-    if (mouseIsPressed && mouseX <= treeSize && mouseY <= treeSize) {
+  draw(sketch) {
+    if (sketch.mouseIsPressed && sketch.mouseX <= treeSize && sketch.mouseY <= treeSize) {
       for (let i = 0; i < brush; ++i) {
-        quadTree.insert(new Point(mouseX + random(-brush, brush), mouseY + random(-brush, brush)))
+        quadTree.insert(new Point(sketch.mouseX + sketch.random(-brush, brush), sketch.mouseY + sketch.random(-brush, brush)))
       }
     }
   }
 }, {
   label: 'Select Points',
-  draw() {
-    if (mouseIsPressed) {
-      stroke(0, 255, 0);
-      noFill();
-      rectMode(CENTER);
+  draw(sketch) {
+    if (sketch.mouseIsPressed) {
+      sketch.stroke(0, 255, 0);
+      sketch.noFill();
+      sketch.rectMode(sketch.CENTER);
       const selectionSize = treeSize / (BRUSH_MAX + 2 - brush);
-      const selection = new Quadrant(mouseX, mouseY, selectionSize, selectionSize);
+      const selection = new Quadrant(sketch.mouseX, sketch.mouseY, selectionSize, selectionSize);
       const cq = new CountingQuery();
       const result = cq.querySteps(quadTree, selection);
-      rect(selection.x, selection.y, selection.h * 2, selection.w * 2);
-      stroke(255, 0, 0);
+      sketch.rect(selection.x, selection.y, selection.h * 2, selection.w * 2);
+      sketch.stroke(255, 0, 0);
       for (let p of result.resList) {
-        strokeWeight(1);
-        text(`Found in ${result.steps} steps`, mouseX - selectionSize, mouseY - selectionSize);
-        strokeWeight(3);
-        point(p.x, p.y);
+        sketch.strokeWeight(1);
+        sketch.text(`Found in ${result.steps} steps`, sketch.mouseX - selectionSize, sketch.mouseY - selectionSize);
+        sketch.strokeWeight(3);
+        sketch.point(p.x, p.y);
       }
     }
   }
 }];
 var canvas;
+var sketch;
 var quadTree;
 var offsetX;
 var offsetY;
@@ -38,81 +39,94 @@ var treeSize;
 var drawSwitch;
 var curDraw;
 var brush;
+var p5;
 
-function setup() {
-  brush = 1;
-  curDraw = DRAW_SELECTION[0];
-  let s = 0.8;
-  let h = ((window.innerHeight > 0) ? window.innerHeight : screen.height) * s;
-  let w = ((window.innerWidth > 0) ? window.innerWidth : screen.width) * s;
-  treeSize = Math.min(w, h);
-  canvas = createCanvas(treeSize, treeSize);
-  canvas.parent = 'sketch-holder';
-  centerCanvas();
-  quadTree = new QuadTree(new Quadrant(treeSize, treeSize, treeSize, treeSize), 4);
-
-  function doClear() {
-    quadTree.clear();
-    clear();
-    background(0);
-  }
-  document.getElementById('clear').addEventListener('click', doClear);
-
-
-  const content = document.getElementById('dropdown-content');
-  const dropdownButton = document.getElementById('dropbtn');
-  dropdownButton.textContent = curDraw.label;
-  loadDropDownContent(content, dropdownButton, DRAW_SELECTION, (i) => {
-    curDraw = DRAW_SELECTION[i];
-    dropdownButton.textContent = curDraw.label;
-    content.classList.toggle('show');
-  });
-
-  function loadDropDownContent(contentHtmlElement, contentBtn, labeledContent, onClickFunc) {
-    for (let i = 0; i < labeledContent.length; i++) {
-      let a = document.createElement('a');
-      const curI = i;
-      a.onclick = () => onClickFunc(curI);
-      a.href = '#';
-      a.textContent = labeledContent[i].label;
-      a.classList = ['dropdown-content-a'];
-      contentHtmlElement.appendChild(a);
-    }
-    contentBtn.addEventListener('click', () => contentHtmlElement.classList.toggle('show'));
-  }
-  const b = document.getElementById("brush");
-  b.value = brush;
-  b.oninput = () => {
-    brush = parseInt(b.value);
-  }
+onload = () => {
+  init();
 }
 
-function draw() {
-  let visitor = new DrawingVisitor()
-  background(0);
-  quadTree.accept(visitor);
-  strokeWeight(1);
-  stroke(0, 0, 255);
-  text(`Total points: ${quadTree.size()}`, 0, treeSize * 0.05);
-  curDraw.draw();
+function init() {
+  const s = (sketch) => {
+    sketch.setup = () => {
+      brush = 1;
+      curDraw = DRAW_SELECTION[0];
+      let s = 0.8;
+      let h = ((window.innerHeight > 0) ? window.innerHeight : screen.height) * s;
+      let w = ((window.innerWidth > 0) ? window.innerWidth : screen.width) * s;
+      treeSize = Math.min(w, h);
+      canvas = sketch.createCanvas(treeSize, treeSize);
+      centerCanvas(sketch);
+      quadTree = new QuadTree(new Quadrant(treeSize, treeSize, treeSize, treeSize), 4);
+
+      function doClear() {
+        quadTree.clear();
+        sketch.clear();
+        sketch.background(0);
+      }
+      document.getElementById('clear').addEventListener('click', doClear);
+
+
+      const content = document.getElementById('dropdown-content');
+      const dropdownButton = document.getElementById('dropbtn');
+      dropdownButton.textContent = curDraw.label;
+      loadDropDownContent(content, dropdownButton, DRAW_SELECTION, (i) => {
+        curDraw = DRAW_SELECTION[i];
+        dropdownButton.textContent = curDraw.label;
+        content.classList.toggle('show');
+      });
+
+      function loadDropDownContent(contentHtmlElement, contentBtn, labeledContent, onClickFunc) {
+        for (let i = 0; i < labeledContent.length; i++) {
+          let a = document.createElement('a');
+          const curI = i;
+          a.onclick = () => onClickFunc(curI);
+          a.href = '#';
+          a.textContent = labeledContent[i].label;
+          a.classList = ['dropdown-content-a'];
+          contentHtmlElement.appendChild(a);
+        }
+        contentBtn.addEventListener('click', () => contentHtmlElement.classList.toggle('show'));
+      }
+      const b = document.getElementById('brush');
+      b.value = brush;
+      b.oninput = () => {
+        brush = parseInt(b.value);
+      }
+    };
+    sketch.draw = () => {
+      let visitor = new DrawingVisitor(sketch)
+      sketch.background(0);
+      quadTree.accept(visitor);
+      sketch.strokeWeight(1);
+      sketch.stroke(0, 0, 255);
+      sketch.text(`Total points: ${quadTree.size()}`, 0, treeSize * 0.05);
+      curDraw.draw(sketch);
+    };
+  };
+  p5 = new p5(s, 'sketch-holder');
 }
 
-function centerCanvas() {
-  offsetX = (windowWidth - treeSize) / 2;
-  offsetY = (windowHeight - treeSize) / 2;
-  canvas.position(offsetX, offsetY);
+function centerCanvas(sketch) {
+  // let holder = document.getElementById('sketch-holder')
+  // console.log(holder);
+  // offsetX = (sketch.windowWidth - treeSize) / 2;
+  // offsetY = (sketch.windowHeight - treeSize);
+  // canvas.position(offsetX, offsetY);
 }
 
 function windowResized() {
-  centerCanvas();
+  centerCanvas(p5.sketch);
 }
 class DrawingVisitor {
+  constructor(sketch) {
+    this.sketch = sketch;
+  }
   visit(qt) {
-    stroke(255);
-    strokeWeight(1);
-    noFill();
-    rectMode(CENTER);
-    rect(qt.quadrant.x, qt.quadrant.y, qt.quadrant.w * 2, qt.quadrant.h * 2);
+    this.sketch.stroke(255);
+    this.sketch.strokeWeight(1);
+    this.sketch.noFill();
+    this.sketch.rectMode(this.sketch.CENTER);
+    this.sketch.rect(qt.quadrant.x, qt.quadrant.y, qt.quadrant.w * 2, qt.quadrant.h * 2);
     if (qt.divided) {
       qt.upLeft.accept(this);
       qt.upRight.accept(this);
@@ -121,8 +135,8 @@ class DrawingVisitor {
     }
 
     for (let p of qt.points) {
-      strokeWeight(3);
-      point(p.x, p.y);
+      this.sketch.strokeWeight(3);
+      this.sketch.point(p.x, p.y);
     }
   }
 }
