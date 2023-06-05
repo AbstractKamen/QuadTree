@@ -19,7 +19,7 @@ const DRAW_SELECTION = [{
       const selectionSize = treeSize / (BRUSH_MAX + 2 - brush);
       const selection = new Quadrant(sketch.mouseX, sketch.mouseY, selectionSize, selectionSize);
       const cq = new CountingQuery();
-      const result = cq.querySteps(quadTree, selection);
+      const result = cq.query(quadTree, selection);
       sketch.rect(selection.x, selection.y, selection.h * 2, selection.w * 2);
       sketch.stroke(255, 0, 0);
       for (let p of result.resList) {
@@ -47,10 +47,35 @@ var brush;
 var p5;
 
 onload = () => {
-  init();
+  initP5();
+  document.getElementById('clear').addEventListener('click', () => {
+    quadTree.clear();
+  });
+  const content = document.getElementById('dropdown-content');
+  const dropdownButton = document.getElementById('dropbtn');
+  dropdownButton.textContent = curDraw.label;
+  for (let i = 0; i < DRAW_SELECTION.length; i++) {
+    let a = document.createElement('a');
+    a.onclick = () => {
+      curDraw = DRAW_SELECTION[i];
+      dropdownButton.textContent = curDraw.label;
+      content.classList.toggle('show');
+    };
+    a.href = '#';
+    a.textContent = DRAW_SELECTION[i].label;
+    a.classList = ['dropdown-content-a'];
+    content.appendChild(a);
+  }
+  dropdownButton.addEventListener('click', () => content.classList.toggle('show'));
+
+  const b = document.getElementById('brush');
+  b.value = brush;
+  b.oninput = () => {
+    brush = parseInt(b.value);
+  }
 }
 
-function init() {
+function initP5() {
   const s = (sketch) => {
     sketch.setup = () => {
       brush = 1;
@@ -64,49 +89,19 @@ function init() {
       quadTree = new QuadTree(new Quadrant(treeSize, treeSize, treeSize, treeSize), 4);
     };
     sketch.draw = () => {
-      let visitor = new DrawingVisitor(sketch)
+      let visitor = new Visitor(sketch)
       sketch.background(0);
       quadTree.accept(visitor);
       sketch.strokeWeight(1);
       sketch.fill(0, 0, 255);
       sketch.stroke(0, 0, 255);
       sketch.textSize(TEXT_SIZE);
-      sketch.text(`Total points: ${quadTree.size()}`, 0, treeSize * 0.05);
+      sketch.text(`Total sub-trees: ${visitor.subTrees}`, treeSize * 0.005, treeSize * 0.03);
+      sketch.text(`Total points: ${quadTree.size()}`, treeSize * 0.005, treeSize * 0.07);
       curDraw.draw(sketch);
     };
   };
   p5 = new p5(s, 'sketch-holder');
-  document.getElementById('clear').addEventListener('click', () => {
-    quadTree.clear();
-  });
-
-
-  const content = document.getElementById('dropdown-content');
-  const dropdownButton = document.getElementById('dropbtn');
-  dropdownButton.textContent = curDraw.label;
-  loadDropDownContent(content, dropdownButton, DRAW_SELECTION, (i) => {
-    curDraw = DRAW_SELECTION[i];
-    dropdownButton.textContent = curDraw.label;
-    content.classList.toggle('show');
-  });
-
-  function loadDropDownContent(contentHtmlElement, contentBtn, labeledContent, onClickFunc) {
-    for (let i = 0; i < labeledContent.length; i++) {
-      let a = document.createElement('a');
-      const curI = i;
-      a.onclick = () => onClickFunc(curI);
-      a.href = '#';
-      a.textContent = labeledContent[i].label;
-      a.classList = ['dropdown-content-a'];
-      contentHtmlElement.appendChild(a);
-    }
-    contentBtn.addEventListener('click', () => contentHtmlElement.classList.toggle('show'));
-  }
-  const b = document.getElementById('brush');
-  b.value = brush;
-  b.oninput = () => {
-    brush = parseInt(b.value);
-  }
 }
 
 function centerCanvas(sketch) {
@@ -120,11 +115,13 @@ function centerCanvas(sketch) {
 function windowResized() {
   centerCanvas(p5.sketch);
 }
-class DrawingVisitor {
+class Visitor {
   constructor(sketch) {
     this.sketch = sketch;
+    this.subTrees = -1; // skip root
   }
   visit(qt) {
+    this.subTrees++;
     this.sketch.stroke(255);
     this.sketch.strokeWeight(1);
     this.sketch.noFill();
@@ -145,7 +142,7 @@ class DrawingVisitor {
 }
 class CountingQuery {
 
-  querySteps(qt, quadrant, result) {
+  query(qt, quadrant, result) {
     if (!result) {
       result = {
         resList: [],
@@ -153,7 +150,6 @@ class CountingQuery {
       };
     }
     if (qt.quadrant.intersetcs(quadrant)) {
-      result.steps++;
       for (let p of qt.points) {
         if (quadrant.contains(p)) {
           result.resList.push(p);
@@ -161,10 +157,11 @@ class CountingQuery {
         }
       }
       if (qt.divided) {
-        this.querySteps(qt.upLeft, quadrant, result);
-        this.querySteps(qt.upRight, quadrant, result);
-        this.querySteps(qt.downLeft, quadrant, result);
-        this.querySteps(qt.downRight, quadrant, result);
+        result.steps += 4;
+        this.query(qt.upLeft, quadrant, result);
+        this.query(qt.upRight, quadrant, result);
+        this.query(qt.downLeft, quadrant, result);
+        this.query(qt.downRight, quadrant, result);
       }
     }
     return result;
