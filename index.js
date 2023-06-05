@@ -7,9 +7,6 @@ const DRAW_SELECTION = [{
     if (sketch.mouseIsPressed) {
       doPaintPoints(sketch, sketch.mouseX, sketch.mouseY);
     }
-  },
-  drawTouch(sketch, e) {
-    doPaintPoints(sketch, e.x, e.y);
   }
 }, {
   label: 'Select Points',
@@ -17,9 +14,6 @@ const DRAW_SELECTION = [{
     if (sketch.mouseIsPressed) {
       doSelectPoints(sketch, sketch.mouseX, sketch.mouseY);
     }
-  },
-  drawTouch(sketch, e) {
-    doSelectPoints(sketch, e.x, e.y);
   }
 }];
 
@@ -93,11 +87,6 @@ function initP5() {
         sketch.text(`Total sub-trees: ${visitor.subTrees}`, treeSize * 0.005, treeSize * 0.03);
         sketch.text(`Total points: ${quadTree.size()}`, treeSize * 0.005, treeSize * 0.07);
         curDraw.draw(sketch);
-        // for (e of sketch.touches) {
-        //   if (rootQuadrant.contains(new Point(e.x, e.y))) {
-        //     curDraw.drawTouch(sketch, e.x, e.y);
-        //   }
-        // }
       };
     },
     'sketch-holder');
