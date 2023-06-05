@@ -10,7 +10,6 @@ const DRAW_SELECTION = [{
   },
   drawTouch(sketch, e) {
     doPaintPoints(sketch, e.x, e.y);
-    return false;
   }
 }, {
   label: 'Select Points',
@@ -21,7 +20,6 @@ const DRAW_SELECTION = [{
   },
   drawTouch(sketch, e) {
     doSelectPoints(sketch, e.x, e.y);
-    return false;
   }
 }];
 
@@ -68,17 +66,21 @@ onload = () => {
 }
 
 function initP5() {
-  let s = 0.8;
-  let h = ((window.innerHeight > 0) ? window.innerHeight : screen.height) * s;
-  let w = ((window.innerWidth > 0) ? window.innerWidth : screen.width) * s;
-  treeSize = Math.min(w, h);
-  const rootQuadrant = new Quadrant(treeSize, treeSize, treeSize, treeSize);
-
   p5 = new p5(
     (sketch) => {
+      sketch.touchStarted = (e) => {
+        return e.target.id !== canvas.canvas.id;
+      };
+      sketch.touchMoved = (e) => {
+        return e.target.id !== canvas.canvas.id;
+      };
       sketch.setup = () => {
+        let s = 0.8;
+        let h = ((window.innerHeight > 0) ? window.innerHeight : screen.height) * s;
+        let w = ((window.innerWidth > 0) ? window.innerWidth : screen.width) * s;
+        treeSize = Math.min(w, h);
         canvas = sketch.createCanvas(treeSize, treeSize);
-        quadTree = new QuadTree(rootQuadrant, 4);
+        quadTree = new QuadTree(new Quadrant(treeSize, treeSize, treeSize, treeSize), 4);
       };
       sketch.draw = () => {
         let visitor = new Visitor(sketch)
@@ -91,12 +93,11 @@ function initP5() {
         sketch.text(`Total sub-trees: ${visitor.subTrees}`, treeSize * 0.005, treeSize * 0.03);
         sketch.text(`Total points: ${quadTree.size()}`, treeSize * 0.005, treeSize * 0.07);
         curDraw.draw(sketch);
-        for (e of sketch.touches) {
-          if (rootQuadrant.contains(new Point(e.x, e.y))) {
-            console.log(e);
-            curDraw.drawTouch(sketch, e.x, e.y);
-          }
-        }
+        // for (e of sketch.touches) {
+        //   if (rootQuadrant.contains(new Point(e.x, e.y))) {
+        //     curDraw.drawTouch(sketch, e.x, e.y);
+        //   }
+        // }
       };
     },
     'sketch-holder');
