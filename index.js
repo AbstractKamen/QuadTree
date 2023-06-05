@@ -1,4 +1,5 @@
 const BRUSH_MAX = 10;
+const TEXT_SIZE = 12;
 const DRAW_SELECTION = [{
   label: 'Paint Points',
   draw(sketch) {
@@ -22,11 +23,15 @@ const DRAW_SELECTION = [{
       sketch.rect(selection.x, selection.y, selection.h * 2, selection.w * 2);
       sketch.stroke(255, 0, 0);
       for (let p of result.resList) {
-        sketch.strokeWeight(1);
-        sketch.text(`Found in ${result.steps} steps`, sketch.mouseX - selectionSize, sketch.mouseY - selectionSize);
         sketch.strokeWeight(3);
         sketch.point(p.x, p.y);
       }
+      sketch.strokeWeight(1);
+      sketch.textSize(TEXT_SIZE);
+      sketch.fill(255, 0, 0);
+      let c = result.resList.length;
+      let s = result.steps;
+      sketch.text(`Found ${c} points in ${s} steps`, sketch.mouseX - selectionSize, sketch.mouseY - selectionSize);
     }
   }
 }];
@@ -57,53 +62,51 @@ function init() {
       canvas = sketch.createCanvas(treeSize, treeSize);
       centerCanvas(sketch);
       quadTree = new QuadTree(new Quadrant(treeSize, treeSize, treeSize, treeSize), 4);
-
-      function doClear() {
-        quadTree.clear();
-        sketch.clear();
-        sketch.background(0);
-      }
-      document.getElementById('clear').addEventListener('click', doClear);
-
-
-      const content = document.getElementById('dropdown-content');
-      const dropdownButton = document.getElementById('dropbtn');
-      dropdownButton.textContent = curDraw.label;
-      loadDropDownContent(content, dropdownButton, DRAW_SELECTION, (i) => {
-        curDraw = DRAW_SELECTION[i];
-        dropdownButton.textContent = curDraw.label;
-        content.classList.toggle('show');
-      });
-
-      function loadDropDownContent(contentHtmlElement, contentBtn, labeledContent, onClickFunc) {
-        for (let i = 0; i < labeledContent.length; i++) {
-          let a = document.createElement('a');
-          const curI = i;
-          a.onclick = () => onClickFunc(curI);
-          a.href = '#';
-          a.textContent = labeledContent[i].label;
-          a.classList = ['dropdown-content-a'];
-          contentHtmlElement.appendChild(a);
-        }
-        contentBtn.addEventListener('click', () => contentHtmlElement.classList.toggle('show'));
-      }
-      const b = document.getElementById('brush');
-      b.value = brush;
-      b.oninput = () => {
-        brush = parseInt(b.value);
-      }
     };
     sketch.draw = () => {
       let visitor = new DrawingVisitor(sketch)
       sketch.background(0);
       quadTree.accept(visitor);
       sketch.strokeWeight(1);
+      sketch.fill(0, 0, 255);
       sketch.stroke(0, 0, 255);
+      sketch.textSize(TEXT_SIZE);
       sketch.text(`Total points: ${quadTree.size()}`, 0, treeSize * 0.05);
       curDraw.draw(sketch);
     };
   };
   p5 = new p5(s, 'sketch-holder');
+  document.getElementById('clear').addEventListener('click', () => {
+    quadTree.clear();
+  });
+
+
+  const content = document.getElementById('dropdown-content');
+  const dropdownButton = document.getElementById('dropbtn');
+  dropdownButton.textContent = curDraw.label;
+  loadDropDownContent(content, dropdownButton, DRAW_SELECTION, (i) => {
+    curDraw = DRAW_SELECTION[i];
+    dropdownButton.textContent = curDraw.label;
+    content.classList.toggle('show');
+  });
+
+  function loadDropDownContent(contentHtmlElement, contentBtn, labeledContent, onClickFunc) {
+    for (let i = 0; i < labeledContent.length; i++) {
+      let a = document.createElement('a');
+      const curI = i;
+      a.onclick = () => onClickFunc(curI);
+      a.href = '#';
+      a.textContent = labeledContent[i].label;
+      a.classList = ['dropdown-content-a'];
+      contentHtmlElement.appendChild(a);
+    }
+    contentBtn.addEventListener('click', () => contentHtmlElement.classList.toggle('show'));
+  }
+  const b = document.getElementById('brush');
+  b.value = brush;
+  b.oninput = () => {
+    brush = parseInt(b.value);
+  }
 }
 
 function centerCanvas(sketch) {
@@ -149,8 +152,8 @@ class CountingQuery {
         steps: 0
       };
     }
-    result.steps++;
     if (qt.quadrant.intersetcs(quadrant)) {
+      result.steps++;
       for (let p of qt.points) {
         if (quadrant.contains(p)) {
           result.resList.push(p);
