@@ -1,5 +1,6 @@
 const BRUSH_MAX = 10;
 const TEXT_SIZE = 12;
+const CANVAS_SCALE = 0.8;
 
 const DRAW_SELECTION = [{
   label: 'Paint Points',
@@ -80,9 +81,8 @@ function initP5() {
       };
       sketch.setup = () => {
         treeCapacity = 4;
-        let s = 0.8;
-        h = ((window.innerHeight > 0) ? window.innerHeight : screen.height) * s;
-        w = ((window.innerWidth > 0) ? window.innerWidth : screen.width) * s;
+        h = ((window.innerHeight > 0) ? window.innerHeight : screen.height) * CANVAS_SCALE;
+        w = ((window.innerWidth > 0) ? window.innerWidth : screen.width) * CANVAS_SCALE;
 
         canvas = sketch.createCanvas(w, h);
         quadTree = new QuadTree(new Quadrant(w, h, h, w), treeCapacity);
