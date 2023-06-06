@@ -66,10 +66,10 @@ class QuadTree {
                 let halfH = this.quadrant.h / 2;
                 let parentX = this.quadrant.x;
                 let parentY = this.quadrant.y;
-                this.upLeft = new QuadTree(new Quadrant(parentX + halfW, parentY - halfH, halfW, halfH), this.capacity);
-                this.upRight = new QuadTree(new Quadrant(parentX - halfW, parentY - halfH, halfW, halfH), this.capacity);
-                this.downLeft = new QuadTree(new Quadrant(parentX + halfW, parentY + halfH, halfW, halfH), this.capacity);
-                this.downRight = new QuadTree(new Quadrant(parentX - halfW, parentY + halfH, halfW, halfH), this.capacity);
+                this.upLeft = new QuadTree(new Quadrant(parentX + halfW, parentY - halfH, halfH, halfW), this.capacity);
+                this.upRight = new QuadTree(new Quadrant(parentX - halfW, parentY - halfH, halfH, halfW), this.capacity);
+                this.downLeft = new QuadTree(new Quadrant(parentX + halfW, parentY + halfH, halfH, halfW), this.capacity);
+                this.downRight = new QuadTree(new Quadrant(parentX - halfW, parentY + halfH, halfH, halfW), this.capacity);
                 this.divided = true;
             }
             this.upLeft.insert(point);
