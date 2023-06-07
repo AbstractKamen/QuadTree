@@ -11,9 +11,9 @@ const DRAW_SELECTION = [{
   }
 }, {
   label: 'Select Points',
-  draw(sketch) {
+  draw(sketch, startX, startY) {
     if (sketch.mouseIsPressed) {
-      doSelectPoints(sketch, sketch.mouseX, sketch.mouseY);
+      doSelectPoints(sketch, startX, startY, sketch.mouseX, sketch.mouseY);
     }
   }
 }];
@@ -71,10 +71,21 @@ onload = () => {
 }
 
 function initP5() {
+  var startX, startY;
   p5 = new p5(
     (sketch) => {
-      sketch.touchStarted = (e) => {
+      sketch.mousePressed = (e) => {
+        startX = sketch.mouseX;
+        startY = sketch.mouseY;
         return e.target.id !== canvas.canvas.id;
+      }
+      sketch.touchStarted = (e) => {
+        if (e.target.id === canvas.canvas.id) {
+          startX = sketch.mouseX;
+          startY = sketch.mouseY;
+          return false;
+        }
+        return true;
       };
       sketch.touchMoved = (e) => {
         return e.target.id !== canvas.canvas.id;
@@ -97,7 +108,7 @@ function initP5() {
         sketch.textSize(TEXT_SIZE);
         sketch.text(`Total sub-trees: ${visitor.subTrees}`, w * 0.005, h * 0.03);
         sketch.text(`Total points: ${quadTree.size()}`, w * 0.005, h * 0.07);
-        curDraw.draw(sketch);
+        curDraw.draw(sketch, startX, startY);
       };
     },
     'sketch-holder');
@@ -111,12 +122,11 @@ function doPaintPoints(sketch, x, y) {
   }
 }
 
-function doSelectPoints(sketch, x, y) {
+function doSelectPoints(sketch, startX, startY, x, y) {
   sketch.stroke(0, 255, 0);
   sketch.noFill();
-  sketch.rectMode(sketch.CENTER);
-  const selection = new Quadrant(x, y, h / (BRUSH_MAX + 2 - brush), w / (BRUSH_MAX + 2 - brush));
   const cq = new CountingQuery();
+  const selection = getSelection(startX, startY, x, y);
   const result = cq.query(quadTree, selection);
   sketch.rect(selection.x, selection.y, selection.w * 2, selection.h * 2);
   sketch.stroke(255, 0, 0);
@@ -129,7 +139,39 @@ function doSelectPoints(sketch, x, y) {
   sketch.fill(255, 0, 0);
   let c = result.resList.length;
   let s = result.steps;
-  sketch.text(`Found ${c} points in ${s} steps`, x - selection.w, y - selection.h);
+  sketch.text(`Found ${c} points in ${s} steps`, selection.x - selection.w, (selection.y - selection.h) * .97);
+}
+
+function getSelection(startX, startY, x, y) {
+  let x2 = (x + startX) / 2;
+  let y2 = (y + startY) / 2
+  if (startX > x) {
+    // left half
+    if (startY > y) {
+      // lower right
+      let y1 = startY - y2;
+      let x1 = startX - x2;
+      return new Quadrant(x2, y2, y1, x1);
+    } else {
+      // upper right
+      let y1 = y2 - startY;
+      let x1 = startX - x2;
+      return new Quadrant(x2, y2, y1, x1);
+    }
+  } else {
+    // right half
+    if (startY > y) {
+      // lower left
+      let y1 = startY - y2;
+      let x1 = x2 - startX;
+      return new Quadrant(x2, y2, y1, x1);
+    } else {
+      // upper left
+      let y1 = y2 - startY;
+      let x1 = x2 - startX;
+      return new Quadrant(x2, y2, y1, x1);
+    }
+  }
 }
 
 class Visitor {
